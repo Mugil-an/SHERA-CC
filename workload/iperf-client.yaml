@@ -1,0 +1,36 @@
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: iperf-client
+  namespace: workloads
+  labels:
+    experiment: network
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 180
+  template:
+    metadata:
+      labels:
+        experiment: network
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: client
+          image: shap-workload:local
+          imagePullPolicy: IfNotPresent
+          command: ["iperf3"]
+          args:
+            - "-c"
+            - "iperf-server"
+            - "-t"
+            - "60"
+            - "-P"
+            - "2"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "128Mi"

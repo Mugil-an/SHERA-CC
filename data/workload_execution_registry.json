@@ -1,0 +1,98 @@
+[
+  {
+    "job_id": "batch01-cpu-00",
+    "workload_type": "cpu",
+    "subtype": "cpu-1c-50pct",
+    "target_node": "kind-worker",
+    "req_cpu": "200m",
+    "lim_cpu": "500m",
+    "req_mem": "64Mi",
+    "lim_mem": "128Mi",
+    "duration": 30,
+    "start_time": 1791968738.1115215
+  },
+  {
+    "job_id": "batch01-cpu-01",
+    "workload_type": "cpu",
+    "subtype": "cpu-1c-100pct",
+    "target_node": "kind-worker2",
+    "req_cpu": "500m",
+    "lim_cpu": "1000m",
+    "req_mem": "64Mi",
+    "lim_mem": "128Mi",
+    "duration": 30,
+    "start_time": 1791968738.1115215
+  },
+  {
+    "job_id": "batch01-cpu-02",
+    "workload_type": "cpu",
+    "subtype": "cpu-2c-80pct",
+    "target_node": null,
+    "req_cpu": "500m",
+    "lim_cpu": "1500m",
+    "req_mem": "128Mi",
+    "lim_mem": "256Mi",
+    "duration": 30,
+    "start_time": 1791968738.1115215
+  },
+  {
+    "job_id": "batch01-cpu-03",
+    "workload_type": "cpu",
+    "subtype": "cpu-2c-100pct",
+    "target_node": "kind-worker",
+    "req_cpu": "1000m",
+    "lim_cpu": "2000m",
+    "req_mem": "128Mi",
+    "lim_mem": "256Mi",
+    "duration": 30,
+    "start_time": 1791968738.1115215
+  },
+  {
+    "job_id": "batch02-cpu-00",
+    "workload_type": "cpu",
+    "subtype": "cpu-3c-90pct",
+    "target_node": "kind-worker",
+    "req_cpu": "1000m",
+    "lim_cpu": "2500m",
+    "req_mem": "128Mi",
+    "lim_mem": "256Mi",
+    "duration": 30,
+    "start_time": 1791968785.076256
+  },
+  {
+    "job_id": "batch02-cpu-01",
+    "workload_type": "cpu",
+    "subtype": "cpu-4c-100pct",
+    "target_node": "kind-worker2",
+    "req_cpu": "1500m",
+    "lim_cpu": "3500m",
+    "req_mem": "256Mi",
+    "lim_mem": "512Mi",
+    "duration": 30,
+    "start_time": 1791968785.076256
+  },
+  {
+    "job_id": "batch02-mem-02",
+    "workload_type": "memory",
+    "subtype": "mem-1v-96M",
+    "target_node": null,
+    "req_cpu": "100m",
+    "lim_cpu": "300m",
+    "req_mem": "96Mi",
+    "lim_mem": "192Mi",
+    "duration": 30,
+    "start_time": 1791968785.076256
+  },
+  {
+    "job_id": "batch02-mem-03",
+    "workload_type": "memory",
+    "subtype": "mem-1v-192M",
+    "target_node": "kind-worker",
+    "req_cpu": "150m",
+    "lim_cpu": "400m",
+    "req_mem": "192Mi",
+    "lim_mem": "288Mi",
+    "duration": 30,
+    "start_time": 1791968785.076256
+  }
+]

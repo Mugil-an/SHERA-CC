@@ -1,0 +1,43 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iperf-server
+  namespace: workloads
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iperf-server
+  template:
+    metadata:
+      labels:
+        app: iperf-server
+    spec:
+      containers:
+        - name: iperf3
+          image: shap-workload:local
+          imagePullPolicy: IfNotPresent
+          command: ["iperf3"]
+          args: ["-s"]
+          ports:
+            - containerPort: 5201
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "300m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iperf-server
+  namespace: workloads
+spec:
+  selector:
+    app: iperf-server
+  ports:
+    - port: 5201
+      targetPort: 5201

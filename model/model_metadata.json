@@ -1,0 +1,95 @@
+{
+  "feature_columns": [
+    "cpu_req_cores",
+    "mem_req_mb",
+    "net_mbps",
+    "duration_sec",
+    "workload_type_cpu",
+    "workload_type_memory",
+    "workload_type_network",
+    "workload_type_mixed",
+    "node_cpu_util_pct",
+    "node_mem_util_pct",
+    "node_active_pods",
+    "node_power_efficiency",
+    "post_alloc_cpu_pct",
+    "post_alloc_mem_pct",
+    "resource_imbalance"
+  ],
+  "base_value": 90.59825134277344,
+  "metrics": {
+    "placement_score": {
+      "r2": 0.9891367725153217,
+      "mae": 0.12294846649169942,
+      "rmse": 0.3772608029501245
+    },
+    "energy_model": {
+      "r2": 0.9911608345111486
+    },
+    "contention_model": {
+      "r2": 0.9759687888274501
+    }
+  },
+  "feature_importance": [
+    {
+      "feature": "resource_imbalance",
+      "mean_abs_shap": 1.8791085481643677
+    },
+    {
+      "feature": "duration_sec",
+      "mean_abs_shap": 1.5593228340148926
+    },
+    {
+      "feature": "node_active_pods",
+      "mean_abs_shap": 0.2714061141014099
+    },
+    {
+      "feature": "post_alloc_cpu_pct",
+      "mean_abs_shap": 0.09114965796470642
+    },
+    {
+      "feature": "post_alloc_mem_pct",
+      "mean_abs_shap": 0.08999000489711761
+    },
+    {
+      "feature": "node_cpu_util_pct",
+      "mean_abs_shap": 0.0496140792965889
+    },
+    {
+      "feature": "node_mem_util_pct",
+      "mean_abs_shap": 0.048902906477451324
+    },
+    {
+      "feature": "cpu_req_cores",
+      "mean_abs_shap": 0.004960585851222277
+    },
+    {
+      "feature": "net_mbps",
+      "mean_abs_shap": 0.0038241567090153694
+    },
+    {
+      "feature": "mem_req_mb",
+      "mean_abs_shap": 0.003270047251135111
+    },
+    {
+      "feature": "node_power_efficiency",
+      "mean_abs_shap": 0.002350107068195939
+    },
+    {
+      "feature": "workload_type_mixed",
+      "mean_abs_shap": 0.001976225757971406
+    },
+    {
+      "feature": "workload_type_memory",
+      "mean_abs_shap": 0.000925640226341784
+    },
+    {
+      "feature": "workload_type_cpu",
+      "mean_abs_shap": 0.0003277527866885066
+    },
+    {
+      "feature": "workload_type_network",
+      "mean_abs_shap": 0.00028376333648338914
+    }
+  ]
+}

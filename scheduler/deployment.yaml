@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shap-scheduler-extender
+  namespace: kube-system
+  labels:
+    app: shap-scheduler-extender
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shap-scheduler-extender
+  template:
+    metadata:
+      labels:
+        app: shap-scheduler-extender
+    spec:
+      hostNetwork: true
+      containers:
+        - name: extender
+          image: python:3.11-slim
+          command: ["sh", "-c"]
+          args:
+            - |
+              pip install --no-cache-dir fastapi uvicorn requests pydantic
+              python -u /app/extender.py
+          ports:
+            - containerPort: 8888
+              name: http
+          env:
+            - name: EXTENDER_PORT
+              value: "8888"
+            - name: PROMETHEUS_URL
+              value: "http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090"
+            - name: API_SERVICE_URL
+              value: "http://shap-api.default.svc.cluster.local:8000"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shap-scheduler-extender
+  namespace: kube-system
+spec:
+  selector:
+    app: shap-scheduler-extender
+  ports:
+    - port: 8888
+      targetPort: 8888

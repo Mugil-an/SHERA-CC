@@ -1,0 +1,37 @@
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cpu-test-03
+  namespace: workloads
+  labels:
+    experiment: cpu
+    trial: "03"
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 180
+  template:
+    metadata:
+      labels:
+        experiment: cpu
+        trial: "03"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: stress
+          image: shap-workload:local
+          imagePullPolicy: IfNotPresent
+          command: ["stress-ng"]
+          args:
+            - "--cpu"
+            - "3"
+            - "--timeout"
+            - "150s"
+            - "--metrics-brief"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "128Mi"
