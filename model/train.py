@@ -158,12 +158,16 @@ def train_and_evaluate(
     plt.close()
     print(f"Saved feature importance plot: {importance_plot_path}")
 
-    # 6. Save Artifacts
+    # 6. Save Artifacts in native XGBoost JSON format and joblib
+    model_score.save_model(os.path.join(output_dir, "placement_model.json"))
+    model_energy.save_model(os.path.join(output_dir, "energy_model.json"))
+    model_contention.save_model(os.path.join(output_dir, "contention_model.json"))
+
     joblib.dump(model_score, os.path.join(output_dir, "placement_model.joblib"))
     joblib.dump(model_energy, os.path.join(output_dir, "energy_model.joblib"))
     joblib.dump(model_contention, os.path.join(output_dir, "contention_model.joblib"))
-    joblib.dump(explainer, os.path.join(output_dir, "explainer.joblib"))
 
+    # Also save tree-explainer base values and precomputed feature importances
     metadata = {
         "feature_columns": FEATURE_COLUMNS,
         "base_value": float(explainer.expected_value),
@@ -177,6 +181,7 @@ def train_and_evaluate(
     with open(os.path.join(output_dir, "model_metadata.json"), "w") as f:
         json.dump(metadata, f, indent=2)
     print(f"Model artifacts and metadata saved to {output_dir}/")
+
 
     return metadata
 

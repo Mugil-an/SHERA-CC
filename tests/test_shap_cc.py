@@ -45,19 +45,36 @@ def test_feature_vector_builder():
     assert df["post_alloc_cpu_pct"].iloc[0] > 40.0
 
 def test_models_exist_and_load():
-    assert os.path.exists("model/placement_model.joblib")
-    assert os.path.exists("model/energy_model.joblib")
-    assert os.path.exists("model/contention_model.joblib")
-    assert os.path.exists("model/explainer.joblib")
+    from xgboost import XGBRegressor
+    import shap
 
-    model = joblib.load("model/placement_model.joblib")
-    explainer = joblib.load("model/explainer.joblib")
-    assert model is not None
+    assert os.path.exists("model/placement_model.json") or os.path.exists("model/placement_model.joblib")
+    assert os.path.exists("model/energy_model.json") or os.path.exists("model/energy_model.joblib")
+    assert os.path.exists("model/contention_model.json") or os.path.exists("model/contention_model.joblib")
+    assert os.path.exists("model/model_metadata.json")
+
+    m = XGBRegressor()
+    if os.path.exists("model/placement_model.json"):
+        m.load_model("model/placement_model.json")
+    else:
+        m = joblib.load("model/placement_model.joblib")
+    
+    explainer = shap.TreeExplainer(m)
+    assert m is not None
     assert explainer is not None
 
 def test_inference_and_shap_consistency():
-    model = joblib.load("model/placement_model.joblib")
-    explainer = joblib.load("model/explainer.joblib")
+    from xgboost import XGBRegressor
+    import shap
+
+    model = XGBRegressor()
+    if os.path.exists("model/placement_model.json"):
+        model.load_model("model/placement_model.json")
+    else:
+        model = joblib.load("model/placement_model.joblib")
+
+    explainer = shap.TreeExplainer(model)
+
 
     pod = PodWorkloadRequest(cpu_req_cores=2.0, mem_req_mb=1024.0)
     node = NodeState(node_name="worker", node_cpu_util_pct=50.0, node_mem_util_pct=40.0)
@@ -68,9 +85,12 @@ def test_inference_and_shap_consistency():
 
     shap_res = explainer(X)
     shap_sum = float(np.sum(shap_res.values[0]))
-    base_val = float(explainer.expected_value)
+    exp_val = explainer.expected_value
+    base_val = float(exp_val[0]) if isinstance(exp_val, (list, np.ndarray)) else float(exp_val)
     # SHAP property: base_value + sum(shap_values) == model_output
     assert np.isclose(score, base_val + shap_sum, atol=1e-2)
+
+
 
 def test_fastapi_health(client):
     res = client.get("/health")

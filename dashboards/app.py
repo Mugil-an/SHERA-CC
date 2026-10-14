@@ -99,24 +99,49 @@ API_URL = os.environ.get("API_URL", "http://localhost:8000")
 # ----------------- Model Loader & In-Process Inference -----------------
 @st.cache_resource
 def load_all_artifacts():
-    """Loads all models, scaler, explainer, and metadata directly in memory."""
+    """Loads all models directly from native JSON and builds TreeExplainer in memory."""
     model_dir = ROOT_DIR / "model"
     artifacts = {}
     try:
-        p_model = model_dir / "placement_model.joblib"
-        e_model = model_dir / "energy_model.joblib"
-        c_model = model_dir / "contention_model.joblib"
-        exp_file = model_dir / "explainer.joblib"
+        from xgboost import XGBRegressor
+        import shap
+
+        p_json = model_dir / "placement_model.json"
+        e_json = model_dir / "energy_model.json"
+        c_json = model_dir / "contention_model.json"
         meta_file = model_dir / "model_metadata.json"
 
-        if p_model.exists():
-            artifacts["placement"] = joblib.load(p_model)
-        if e_model.exists():
-            artifacts["energy"] = joblib.load(e_model)
-        if c_model.exists():
-            artifacts["contention"] = joblib.load(c_model)
-        if exp_file.exists():
-            artifacts["explainer"] = joblib.load(exp_file)
+        # Load placement scoring model
+        if p_json.exists():
+            m_p = XGBRegressor()
+            m_p.load_model(str(p_json))
+            artifacts["placement"] = m_p
+        elif (model_dir / "placement_model.joblib").exists():
+            artifacts["placement"] = joblib.load(model_dir / "placement_model.joblib")
+
+        # Load energy model
+        if e_json.exists():
+            m_e = XGBRegressor()
+            m_e.load_model(str(e_json))
+            artifacts["energy"] = m_e
+        elif (model_dir / "energy_model.joblib").exists():
+            artifacts["energy"] = joblib.load(model_dir / "energy_model.joblib")
+
+        # Load contention model
+        if c_json.exists():
+            m_c = XGBRegressor()
+            m_c.load_model(str(c_json))
+            artifacts["contention"] = m_c
+        elif (model_dir / "contention_model.joblib").exists():
+            artifacts["contention"] = joblib.load(model_dir / "contention_model.joblib")
+
+        # Dynamically instantiate TreeExplainer in memory (no numba dependency required!)
+        if "placement" in artifacts:
+            try:
+                artifacts["explainer"] = shap.TreeExplainer(artifacts["placement"])
+            except Exception as e_shap:
+                print(f"Notice: TreeExplainer fallback: {e_shap}")
+
         if meta_file.exists():
             with open(meta_file, "r") as f:
                 artifacts["metadata"] = json.load(f)
@@ -125,6 +150,7 @@ def load_all_artifacts():
     return artifacts
 
 artifacts = load_all_artifacts()
+
 
 def build_features(pod_spec: dict, node_spec: dict) -> pd.DataFrame:
     """Constructs the exact 15-feature matrix expected by the XGBoost models."""
@@ -179,7 +205,10 @@ def evaluate_node_local(pod_spec: dict, node_spec: dict) -> dict:
         contention = float(artifacts["contention"].predict(X)[0])
     if "explainer" in artifacts:
         explainer = artifacts["explainer"]
-        base_val = float(explainer.expected_value)
+        exp_val = explainer.expected_value
+        base_val = float(exp_val[0]) if isinstance(exp_val, (list, np.ndarray)) else float(exp_val)
+
+
         shap_res = explainer(X)
         vals = shap_res.values[0]
         for feat, val, s_val in zip(X.columns, X.iloc[0], vals):
@@ -365,7 +394,7 @@ with tabs[0]:
             plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#94a3b8"),
         )
-        st.plotly_chart(fig_score, use_container_width=True)
+        st.plotly_chart(fig_score, width="stretch")
 
         # Plotly Diverging SHAP Bar Chart for Winning Node
         st.markdown(f"##### SHAP Feature Attributions for `{winner['node_name']}`")
@@ -396,7 +425,7 @@ with tabs[0]:
             plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#cbd5e1"),
         )
-        st.plotly_chart(fig_shap, use_container_width=True)
+        st.plotly_chart(fig_shap, width="stretch")
 
 # ==============================================================================
 # TAB 2: EMPIRICAL WORKLOAD DATA
@@ -419,7 +448,7 @@ with tabs[1]:
         k4.metric("Average Energy / Job", f"{df_obs['energy_proxy_joules'].mean():.1f} J")
 
         st.markdown("#### Live Observed Jobs Dataframe")
-        st.dataframe(df_obs, use_container_width=True, hide_index=True)
+        st.dataframe(df_obs, width="stretch", hide_index=True)
 
         st.markdown("#### Resource Intensity vs Energy Consumption")
         fig_scatter = px.scatter(
@@ -443,12 +472,12 @@ with tabs[1]:
             plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#94a3b8"),
         )
-        st.plotly_chart(fig_scatter, use_container_width=True)
+        st.plotly_chart(fig_scatter, width="stretch")
 
     if train_path.exists():
         df_train = pd.read_csv(train_path)
         with st.expander(f"📁 View Full Synthesized Dataset ({len(df_train):,} samples for ML Training)"):
-            st.dataframe(df_train.head(50), use_container_width=True)
+            st.dataframe(df_train.head(50), width="stretch")
 
 # ==============================================================================
 # TAB 3: LIVE CLUSTER TELEMETRY

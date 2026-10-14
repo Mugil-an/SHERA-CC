@@ -69,23 +69,50 @@ app.add_middleware(
 models: Dict[str, Any] = {}
 metadata: Dict[str, Any] = {}
 
+import shap
+from xgboost import XGBRegressor
+
 def load_models():
-    """Loads trained models and SHAP explainer."""
-    if os.path.exists(PLACEMENT_MODEL_PATH):
-        try:
+    """Loads trained models and builds SHAP explainer in memory without pickling issues."""
+    p_json = os.path.join(MODEL_DIR, "placement_model.json")
+    e_json = os.path.join(MODEL_DIR, "energy_model.json")
+    c_json = os.path.join(MODEL_DIR, "contention_model.json")
+
+    try:
+        if os.path.exists(p_json):
+            m_p = XGBRegressor()
+            m_p.load_model(p_json)
+            models["placement"] = m_p
+        elif os.path.exists(PLACEMENT_MODEL_PATH):
             models["placement"] = joblib.load(PLACEMENT_MODEL_PATH)
+
+        if os.path.exists(e_json):
+            m_e = XGBRegressor()
+            m_e.load_model(e_json)
+            models["energy"] = m_e
+        elif os.path.exists(ENERGY_MODEL_PATH):
             models["energy"] = joblib.load(ENERGY_MODEL_PATH)
+
+        if os.path.exists(c_json):
+            m_c = XGBRegressor()
+            m_c.load_model(c_json)
+            models["contention"] = m_c
+        elif os.path.exists(CONTENTION_MODEL_PATH):
             models["contention"] = joblib.load(CONTENTION_MODEL_PATH)
-            models["explainer"] = joblib.load(EXPLAINER_PATH)
-            if os.path.exists(METADATA_PATH):
-                with open(METADATA_PATH, "r") as f:
-                    metadata.update(json.load(f))
-            print("Successfully loaded ML models and SHAP explainer.")
-        except Exception as e:
-            print(f"Warning loading models: {e}")
+
+        if "placement" in models:
+            models["explainer"] = shap.TreeExplainer(models["placement"])
+
+        if os.path.exists(METADATA_PATH):
+            with open(METADATA_PATH, "r") as f:
+                metadata.update(json.load(f))
+        print("Successfully loaded ML models and built SHAP explainer in memory.")
+    except Exception as e:
+        print(f"Warning loading models: {e}")
 
 # Initial load on module load
 load_models()
+
 
 
 
