@@ -363,13 +363,14 @@ def extender_prioritize(args: ExtenderArgs) -> List[HostPriority]:
 
     priorities: List[HostPriority] = []
     for host in node_names:
-        # Default node load baseline
         node_state = NodeState(
             node_name=host,
-            node_cpu_util_pct=30.0 if "2" in host else 45.0, # simulates variation
-            node_mem_util_pct=40.0,
+            node_cpu_util_pct=35.0,
+            node_mem_util_pct=35.0,
             node_active_pods=4,
         )
+
+
         if "placement" in models:
             X_feat = build_feature_vector(pod_req, node_state)
             score = int(round(float(models["placement"].predict(X_feat)[0])))

@@ -169,37 +169,71 @@ with col_input:
 
     st.subheader("2. Cluster Node States")
     with st.container(border=True):
-        # Optional live fetch button
-        if st.button("🔄 Sync with Live Kind Cluster Telemetry"):
+        st.markdown("**Quick Test Scenarios:**")
+        b_col1, b_col2, b_col3 = st.columns(3)
+        
+        if b_col1.button("🔴 Node 1 Busy\n(Selects Node 2)"):
+            st.session_state["slider_n1"] = 72.0
+            st.session_state["slider_n1_mem"] = 60.0
+            st.session_state["n1_pods"] = 8
+            st.session_state["slider_n2"] = 20.0
+            st.session_state["slider_n2_mem"] = 25.0
+            st.session_state["n2_pods"] = 2
+            st.rerun()
+
+        if b_col2.button("🟢 Node 2 Busy\n(Selects Node 1)"):
+            st.session_state["slider_n1"] = 18.0
+            st.session_state["slider_n1_mem"] = 22.0
+            st.session_state["n1_pods"] = 2
+            st.session_state["slider_n2"] = 78.0
+            st.session_state["slider_n2_mem"] = 65.0
+            st.session_state["n2_pods"] = 10
+            st.rerun()
+
+        if b_col3.button("🔄 Sync Live\nPrometheus"):
             try:
-                q = '100 * (1 - avg by (node) (rate(node_cpu_seconds_total{mode="idle"}[1m])))'
-                res = requests.get(f"{PROMETHEUS_URL}/api/v1/query?query={q}", timeout=2).json()
-                items = res.get("data", {}).get("result", [])
-                for item in items:
-                    node_name = item["metric"].get("node")
+                # 1. Map instance IP:Port to nodename
+                r_uname = requests.get(f"{PROMETHEUS_URL}/api/v1/query?query=node_uname_info", timeout=2).json()
+                inst_map = {}
+                for item in r_uname.get("data", {}).get("result", []):
+                    inst = item["metric"].get("instance")
+                    node = item["metric"].get("nodename")
+                    if inst and node:
+                        inst_map[inst] = node
+
+                # 2. Query CPU load by instance
+                q_cpu = '100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])))'
+                res = requests.get(f"{PROMETHEUS_URL}/api/v1/query?query={q_cpu}", timeout=2).json()
+                for item in res.get("data", {}).get("result", []):
+                    inst = item["metric"].get("instance")
+                    node_name = inst_map.get(inst)
+                    val = round(float(item["value"][1]), 1)
                     if node_name == "kind-worker":
-                        st.session_state["n1_cpu_val"] = float(item["value"][1])
+                        st.session_state["slider_n1"] = val
                     elif node_name == "kind-worker2":
-                        st.session_state["n2_cpu_val"] = float(item["value"][1])
-                st.success("Synced real CPU load from Prometheus!")
+                        st.session_state["slider_n2"] = val
+
+                st.session_state["n1_pods"] = 3
+                st.session_state["n2_pods"] = 3
+                st.success("Synced live telemetry from kind cluster!")
+                st.rerun()
             except Exception as e:
-                st.warning("Could not reach Prometheus. Using manual sliders.")
+                st.warning(f"Could not sync with Prometheus: {e}")
 
         st.markdown("**`kind-worker` (Node 1)**")
-        default_n1_cpu = st.session_state.get("n1_cpu_val", 68.0)
-        n1_cpu = st.slider("CPU Load (%)", 5.0, 95.0, float(default_n1_cpu), 1.0, key="slider_n1")
-        n1_mem = st.slider("Memory Load (%)", 5.0, 95.0, 55.0, 1.0, key="slider_n1_mem")
+        n1_cpu = st.slider("CPU Load (%)", 5.0, 95.0, st.session_state.get("slider_n1", 68.0), 1.0, key="slider_n1")
+        n1_mem = st.slider("Memory Load (%)", 5.0, 95.0, st.session_state.get("slider_n1_mem", 55.0), 1.0, key="slider_n1_mem")
 
         st.markdown("**`kind-worker2` (Node 2)**")
-        default_n2_cpu = st.session_state.get("n2_cpu_val", 22.0)
-        n2_cpu = st.slider("CPU Load (%)", 5.0, 95.0, float(default_n2_cpu), 1.0, key="slider_n2")
-        n2_mem = st.slider("Memory Load (%)", 5.0, 95.0, 25.0, 1.0, key="slider_n2_mem")
+        n2_cpu = st.slider("CPU Load (%)", 5.0, 95.0, st.session_state.get("slider_n2", 22.0), 1.0, key="slider_n2")
+        n2_mem = st.slider("Memory Load (%)", 5.0, 95.0, st.session_state.get("slider_n2_mem", 25.0), 1.0, key="slider_n2_mem")
 
 # ----------------- Right Column: Decision & SHAP -----------------
 with col_decision:
     pod = {"name": pod_name, "cpu_req": cpu_req, "mem_req": mem_req, "wtype": w_type, "duration": duration}
-    n1 = {"name": "kind-worker", "cpu_util": n1_cpu, "mem_util": n1_mem, "pods": 8}
-    n2 = {"name": "kind-worker2", "cpu_util": n2_cpu, "mem_util": n2_mem, "pods": 3}
+    n1 = {"name": "kind-worker", "cpu_util": n1_cpu, "mem_util": n1_mem, "pods": st.session_state.get("n1_pods", 8)}
+    n2 = {"name": "kind-worker2", "cpu_util": n2_cpu, "mem_util": n2_mem, "pods": st.session_state.get("n2_pods", 3)}
+
 
     res1 = evaluate_node(pod, n1)
     res2 = evaluate_node(pod, n2)
